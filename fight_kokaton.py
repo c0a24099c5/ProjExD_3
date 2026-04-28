@@ -56,6 +56,7 @@ class Bird:
         self.img = __class__.imgs[(+5, 0)]
         self.rct: pg.Rect = self.img.get_rect()
         self.rct.center = xy
+        self.dire = (+5, 0)
 
     def change_img(self, num: int, screen: pg.Surface):
         """
@@ -82,23 +83,34 @@ class Bird:
             self.rct.move_ip(-sum_mv[0], -sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
             self.img = __class__.imgs[tuple(sum_mv)]
+            self.dire = tuple(sum_mv)
         screen.blit(self.img, self.rct)
 
 
 class Beam:
     """
-    こうかとんが放つビームに関するクラス
+    こうかとんが発射するビームに関するクラス
+    向きに応じて発射方向も変化する
     """
-    def __init__(self, bird:"Bird"):
+    def __init__(self, bird: "Bird") -> FileNotFoundError:
         """
         ビーム画像Surfaceを生成する
-        引数 bird：ビームを放つこうかとん（Birdインスタンス）
+        引数 bird:ビームを発射するこうかとん
         """
-        self.img = pg.image.load(f"fig/beam.png")
+        self.img = pg.image.load("fig/beam.png")
         self.rct = self.img.get_rect()
-        self.rct.centery = bird.rct.centery  # ビームの中心縦座標 = こうかとんの中心縦座標
-        self.rct.left = bird.rct.right  # ビームの左座標 = こうかとんの右座標
-        self.vx, self.vy = +5, 0
+
+        self.rct.center = bird.rct.center
+        self.vx, self.vy = bird.dire
+        self.rct.move_ip(self.vx*2, self.vy*2)
+
+    def update(self, screen: pg.Surface) -> None:
+        """
+        ビームの画像も移動
+        引数 screen:画面Surface
+        """
+        self.rct.move_ip(self.vx, self.vy)
+        screen.blit(self.img, self.rct)
 
     def update(self, screen: pg.Surface):
         """
@@ -145,6 +157,9 @@ class Score:
     スコア表示クラス
     """
     def __init__(self):
+        """
+        スコアの設定（フォント、色、初期値、表示場所）
+        """
         self.fonto = pg.font.SysFont(None, 30)
         self.color = (0, 0, 255)  # 青
         self.score = 0
@@ -154,6 +169,10 @@ class Score:
         self.rct.center = (100, HEIGHT - 50)
 
     def update(self, screen: pg.Surface):
+        """
+        スコア表示
+        引数 screen:画面Surface
+        """
         self.img = self.fonto.render(f"Score: {self.score}", True, self.color)
         screen.blit(self.img, self.rct)
     
@@ -161,17 +180,31 @@ class Explosion:
     """
     爆発エフェクトに関するクラス
     """
-    def __init__(self, xy):
+    def __init__(self, xy:tuple[int, int]) -> None:
+        """
+        爆発画像生成
+        引数 xy:爆発の座標
+        """
         self.img = pg.image.load("fig/explosion.gif")
         self.rct = self.img.get_rect()
         self.rct.center = xy
         self.life = 30  # フレーム数（これが0で消える）
 
     def update(self, screen: pg.Surface):
+        """
+        爆発画像表示
+        引数 screen:画面Surface
+        """
         screen.blit(self.img, self.rct)
         self.life -= 1
 
-def main():
+def main() -> None:
+    """
+    ゲームのメイン部分
+    ・イベント処理
+    ・衝突判定
+    ・描画更新
+    """
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
     bg_img = pg.image.load("fig/pg_bg.jpg")
