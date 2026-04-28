@@ -156,7 +156,20 @@ class Score:
     def update(self, screen: pg.Surface):
         self.img = self.fonto.render(f"Score: {self.score}", True, self.color)
         screen.blit(self.img, self.rct)
+    
+class Explosion:
+    """
+    爆発エフェクトに関するクラス
+    """
+    def __init__(self, xy):
+        self.img = pg.image.load("fig/explosion.gif")
+        self.rct = self.img.get_rect()
+        self.rct.center = xy
+        self.life = 30  # フレーム数（これが0で消える）
 
+    def update(self, screen: pg.Surface):
+        screen.blit(self.img, self.rct)
+        self.life -= 1
 
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
@@ -165,9 +178,11 @@ def main():
     bird = Bird((300, 200))
     bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)]
 
-    beams = []  # ←ここに移動
+    beams = []
+    explosions = []
     score = Score()
     clock = pg.time.Clock()
+
     tmr = 0
 
     while True:
@@ -188,7 +203,6 @@ def main():
                 time.sleep(1)
                 return
         
-        # ★ここ修正（衝突処理）
         new_beams = []
         for beam in beams:
             hit = False
@@ -196,7 +210,7 @@ def main():
                 if bomb is not None and beam.rct.colliderect(bomb.rct):
                     bombs[i] = None
                     score.score += 1
-                    bird.change_img(6, screen)
+                    explosions.append(Explosion(bomb.rct.center))
                     hit = True
                     break
             if not hit:
@@ -218,6 +232,13 @@ def main():
             bomb.update(screen)
 
         score.update(screen)
+
+        new_explosions = []
+        for exp in explosions:
+            exp.update(screen)
+            if exp.life > 0:
+                new_explosions.append(exp)
+        explosions = new_explosions
 
         pg.display.update()
         tmr += 1
